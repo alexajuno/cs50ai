@@ -3,6 +3,7 @@ Tic Tac Toe Player
 """
 
 import math
+from copy import deepcopy
 
 X = "X"
 O = "O"
@@ -50,8 +51,9 @@ def result(board, action):
     """
     if action not in actions(board):
         raise ValueError("Invalid action")
-    board[action[0]][action[1]] = player(board)
-    return board
+    new_board = deepcopy(board)
+    new_board[action[0]][action[1]] = player(board)
+    return new_board
 
 
 def winner(board):
@@ -109,8 +111,8 @@ def max_value(board):
     move = None
     for action in actions(board):
         min_val = min_value(result(board, action))
-        if min_val > v:
-            v = min_val
+        if min_val[0] > v:
+            v = min_val[0]
             move = action
     return v, move
 
@@ -121,7 +123,7 @@ def min_value(board):
     move = None
     for action in actions(board):
         max_val = max_value(result(board, action))
-        if max_val < v:
-            v = max_val
+        if max_val[0] < v:
+            v = max_val[0]
             move = action
     return v, move
