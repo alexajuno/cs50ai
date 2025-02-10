@@ -1,67 +1,54 @@
-# Development stage
-FROM ubuntu:22.04 AS development
+# Use Ubuntu as base image for better package compatibility
+FROM ubuntu:22.04
 
-# Prevent timezone prompt
+# Prevent timezone prompt during package installation
 ENV DEBIAN_FRONTEND=noninteractive
 
-# Install Python and development dependencies
+# Install Python and common development dependencies
 RUN apt-get update && apt-get install -y \
+    software-properties-common \
+    && add-apt-repository ppa:deadsnakes/ppa \
+    && apt-get update \
+    && apt-get install -y \
     python3.12 \
+    python3.12-venv \
+    python3.12-dev \
     python3-pip \
-    python3-venv \
     git \
     openssh-client \
     build-essential \
+    # Dependencies commonly needed for packages like pygame
+    libsdl2-dev \
+    libsdl2-image-dev \
+    libsdl2-mixer-dev \
+    libsdl2-ttf-dev \
+    libfreetype6-dev \
+    libportmidi-dev \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
 # Create and activate virtual environment
-RUN python3 -m venv /opt/venv
+RUN python3.12 -m venv /opt/venv
 ENV PATH="/opt/venv/bin:$PATH"
-
-# Copy requirements first to leverage Docker cache
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
 
 # Create a non-root user
 RUN useradd -m -s /bin/bash appuser
-RUN mkdir -p /app/.submit50 && \
-    chown -R appuser:appuser /app /opt/venv
 
-# Create submit50 config directory
-RUN mkdir -p /home/appuser/.config/submit50
-RUN chown -R appuser:appuser /home/appuser/.config
+# Create necessary directories
+RUN mkdir -p /home/appuser/.config/submit50 && \
+    mkdir -p /app/.submit50 && \
+    chown -R appuser:appuser /app /opt/venv /home/appuser
 
-# Switch to appuser for configuration
+# Switch to non-root user
 USER appuser
 
 # Set up git configuration
 RUN git config --global credential.helper store
 
-# Create script to setup credentials
+# Copy and setup the credentials script
 COPY --chown=appuser:appuser scripts/setup-credentials.sh /home/appuser/setup-credentials.sh
 RUN chmod +x /home/appuser/setup-credentials.sh
 
-# Production stage
-FROM python:3.12-slim AS production
-
-WORKDIR /app
-
-# Copy virtual environment from development stage
-COPY --from=development /opt/venv /opt/venv
-ENV PATH="/opt/venv/bin:$PATH"
-
-# Create a non-root user
-RUN useradd -m -s /bin/bash appuser
-
-# Copy only necessary files
-COPY degrees/degrees.py degrees/
-COPY degrees/util.py degrees/
-COPY requirements.txt .
-
-# Set ownership
-RUN chown -R appuser:appuser /app
-
-# Switch to non-root user
-USER appuser
+# Default command
+CMD ["/bin/bash"]

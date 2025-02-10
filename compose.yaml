@@ -4,7 +4,6 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-      target: development
     volumes:
       - .:/app
       - ~/.submit50:/app/.submit50
