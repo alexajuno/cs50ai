@@ -1,3 +1,3 @@
 # CS50 AI
 
-Project contains work for CS50 AI course.
+This project contains work from the CS50 AI course.
